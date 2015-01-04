@@ -83,7 +83,7 @@ class IRCClient(threading.Thread):
             try:
                 if line.startswith('PING'):
                     data = line.split(':')[1]
-                    self._encode_send('PONG :%s' % (data))
+                    self._encode_send('PONG :%s\r\n' % (data))
                     self._logger.info("PING %s? PONG %s!" % (data, data))
                     continue
 
