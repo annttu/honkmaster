@@ -199,6 +199,6 @@ class IRCClient(threading.Thread):
             self._initial_irc_connect()
             self._irc_loop()
         except IRCException as ie:
-            pass
+            self._socket.close()
 
 
