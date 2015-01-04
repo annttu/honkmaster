@@ -16,12 +16,23 @@ class FileMonitor(threading.Thread):
     def run(self):
         self._running = True
         
-        self._filehandle = open(self._logfile, 'r')
-        st_results = os.stat(self._logfile)
-        st_size = st_results[6]
-        ino = os.stat(self._filehandle.name).st_ino
+        st_results = None
+        st_size = None
+        ino = None
 
-        self._filehandle.seek(st_size)
+        while self._running and self._filehandle is None:
+            try:
+                self._filehandle = open(self._logfile, 'r')
+                st_results = os.stat(self._logfile)
+                st_size = st_results[6]
+                ino = os.stat(self._filehandle.name).st_ino
+                self._filehandle.seek(st_size)
+            except:
+                self._filehandle = None
+                time.sleep(1)
+
+        if self._filehandle is not None and self._running:
+            self._irc_client.send_message('I am now listening for changes in file: %s' % (self._logfile))
 
         while self._running:
             gotline = False

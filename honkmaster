@@ -17,28 +17,37 @@ def main(argc, argv):
     parser.add_argument('-p', '--port', help='irc server port', required=False, default=6667)
     parser.add_argument('-c', '--channel', help='irc channel', required=True)
     parser.add_argument('-n', '--nick', help='irc nick', required=True)
+    parser.add_argument('-m', '--monitor', help='file to monitor (may be specified multiple times)', action='append')
     args = parser.parse_args()
 
     irc_client = IRCClient(args.server,args.port,args.channel,args.nick,'HonkMaster2')
-    file_monitor = FileMonitor('file', irc_client)
+
+    file_monitors = []
+    for monitored_file in args.monitor:
+        file_monitor = FileMonitor(monitored_file, irc_client)
+        file_monitor.daemon = True
+        file_monitors.append(file_monitor)
 
     irc_client.daemon = True
-    file_monitor.daemon = True
 
     irc_client.start()
-    file_monitor.start()
+
+    for file_monitor in file_monitors:
+        file_monitor.start()
 
     try:
-        while irc_client.is_alive() and file_monitor.is_alive():
+        while irc_client.is_alive():
             time.sleep(1)
     except KeyboardInterrupt as ke:
         pass
 
     irc_client.abort()
-    file_monitor.abort()
+    for file_monitor in file_monitors:
+        file_monitor.abort()
 
     irc_client.join()
-    file_monitor.join()
+    for file_monitor in file_monitors:
+        file_monitor.join()
 
 if __name__ == '__main__':
     sys.exit(main(len(sys.argv), sys.argv))

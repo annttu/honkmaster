@@ -125,7 +125,7 @@ class IRCClient(threading.Thread):
         return line_data
 
     def _send_to_channel(self, message):
-        self._encode_send('PRIVMSG %s %s\r\n' % (self._channel, message))
+        self._encode_send('PRIVMSG %s :%s\r\n' % (self._channel, message))
         self._logger.info("%s [PRIVMSG -> %s] >> %s" % (self._nick, self._channel, message))
 
     def _initial_irc_connect(self):
