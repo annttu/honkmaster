@@ -66,7 +66,7 @@ class IRCClient(threading.Thread):
         self._socket.send(data.encode('utf-8'))
 
     def _decode_recv(self, len):
-        data = self._socket.recv(4096).decode('utf-8')
+        data = self._socket.recv(4096).decode('utf-8', errors='replace')
         lines = data.split('\n')
         out_lines = []
         for line in lines:
@@ -120,7 +120,6 @@ class IRCClient(threading.Thread):
                     self._logger.info("%s [%s -> %s]" % (source, action, target))
             except:
                 self._logger.error(line)
-                raise
 
         return line_data
 
@@ -181,7 +180,7 @@ class IRCClient(threading.Thread):
         try:
             self._socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
             self._socket.connect((self._server,self._port))
-        except OSError as ose:
+        except BaseException as bse:
             self._logger.error("failed connecting when using AF_INET6, fallback to inet")
 
             try:
@@ -191,9 +190,6 @@ class IRCClient(threading.Thread):
                 self._logger.error("failed connecting when using AF_INET fallback")
                 self._logger.exception(e)
                 raise
-        except BaseException as e:
-            self._logger.error("failed connecting when using AF_INET6, weird exception!")
-            raise
 
         try:
             self._initial_irc_connect()
