@@ -2,6 +2,7 @@ import socket
 import threading
 import logging
 import time
+import ssl
 
 IRCStatusMap = {
     '001': 'WELCOME',
@@ -27,13 +28,16 @@ class IRCException(BaseException):
     pass
 
 class IRCClient(threading.Thread):
-    def __init__(self, server, port, channel, nick, realname):
+    def __init__(self, server, port, channel, nick, realname, ssl=False,
+                 server_password=None):
         threading.Thread.__init__(self)
         self._server = server
         self._port = port
         self._channel = channel
         self._nick = nick
         self._realname = realname
+        self._use_ssl = ssl
+        self._server_password = server_password
 
         self._running = False
         self._socket = None
@@ -66,7 +70,7 @@ class IRCClient(threading.Thread):
         self._socket.send(data.encode('utf-8'))
 
     def _decode_recv(self, len):
-        data = self._socket.recv(4096).decode('utf-8', errors='replace')
+        data = self._socket.recv(len).decode('utf-8', errors='replace')
         lines = data.split('\n')
         out_lines = []
         for line in lines:
@@ -128,6 +132,8 @@ class IRCClient(threading.Thread):
         self._logger.info("%s [PRIVMSG -> %s] >> %s" % (self._nick, self._channel, message))
 
     def _initial_irc_connect(self):
+        if self._server_password:
+            self._encode_send('PASS %s\r\n' % (self._server_password))
         self._encode_send('NICK %s\r\n' % (self._nick))
         self._encode_send('USER %s %s %s :%s\r\n' % (self._nick, self._nick, self._nick, self._realname))
 
@@ -151,7 +157,8 @@ class IRCClient(threading.Thread):
                 if data['action'] == 'JOIN' and data['target'] == self._channel:
                     join_done = True
 
-        self._send_to_channel('Hello :)')
+        #time.sleep(5)
+        self._send_to_channel("I'm alive again! :)")
 
     def _irc_loop(self):
         self._socket.setblocking(False)
@@ -159,11 +166,14 @@ class IRCClient(threading.Thread):
         while self._running:
             got_data = False
             try:
-                irc_data = self._parse_irc_lines(self._decode_recv(4096))
+                irc_data = self._parse_irc_lines(self._decode_recv(1024))
                 got_data = True
 
                 # implement custom event handlers here whenever
             except BlockingIOError as bie:
+                pass
+
+            except ssl.SSLWantReadError as ssle:
                 pass
 
             self._process_messages()
@@ -179,6 +189,9 @@ class IRCClient(threading.Thread):
         self._running = True
         try:
             self._socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+            if self._use_ssl:
+                context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+                self._socket = context.wrap_socket(self._socket)
             self._socket.connect((self._server,self._port))
         except BaseException as bse:
             self._logger.error("failed connecting when using AF_INET6, fallback to inet")
@@ -190,6 +203,11 @@ class IRCClient(threading.Thread):
                 self._logger.error("failed connecting when using AF_INET fallback")
                 self._logger.exception(e)
                 raise
+
+        self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 5)
+        self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 20)
+        self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 6)
 
         try:
             self._initial_irc_connect()
