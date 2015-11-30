@@ -11,13 +11,17 @@ from monitor import FileMonitor
 
 logging.basicConfig(level=logging.INFO)
 
+from plugins import lapio
+
+PLUGINS = [lapio.Lapio]
+
 def main(argc, argv):
     parser = argparse.ArgumentParser(description='HonkMaster2')
     parser.add_argument('-s', '--server', help='irc server', required=True)
     parser.add_argument('-p', '--port', help='irc server port', required=False, default=6667, type=int)
     parser.add_argument('--ssl', help="Use SSL for connection", required=False, default=False, action="store_true")
     parser.add_argument('--server-password', help="Server password", required=False, default=None)
-    parser.add_argument('-c', '--channel', help='irc channel', required=True)
+    parser.add_argument('-c', '--channel', help='irc channel(s) (may be specified multiple times)', action='append', required=True)
     parser.add_argument('-n', '--nick', help='irc nick', required=True)
     parser.add_argument('-m', '--monitor', help='file to monitor (may be specified multiple times)', action='append')
     args = parser.parse_args()
@@ -40,6 +44,13 @@ def main(argc, argv):
     irc_client.daemon = True
 
     irc_client.start()
+
+    plugin_threads = []
+
+    for plugin in PLUGINS:
+        x = plugin(irc_client)
+        irc_client.add_plugin(x)
+        x.start()
 
     for file_monitor in file_monitors:
         file_monitor.start()
