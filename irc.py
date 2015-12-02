@@ -202,7 +202,8 @@ class IRCClient(threading.Thread):
             irc_data = []
             try:
                 irc_data = self._parse_irc_lines(self._decode_recv(4096))
-                got_data = True
+                if irc_data:
+                    got_data = True
 
                 # implement custom event handlers here whenever
             except BlockingIOError as bie:

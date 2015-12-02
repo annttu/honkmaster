@@ -11,9 +11,12 @@ from monitor import FileMonitor
 
 logging.basicConfig(level=logging.INFO)
 
-from plugins import lapio
+from plugins import lapio, shout
 
-PLUGINS = [lapio.Lapio]
+PLUGINS = {
+    'lapio': lapio.Lapio,
+    'shout': shout.Shout
+}
 
 def main(argc, argv):
     parser = argparse.ArgumentParser(description='HonkMaster2')
@@ -24,7 +27,11 @@ def main(argc, argv):
     parser.add_argument('-c', '--channel', help='irc channel(s) (may be specified multiple times)', action='append', required=True)
     parser.add_argument('-n', '--nick', help='irc nick', required=True)
     parser.add_argument('-m', '--monitor', help='file to monitor (may be specified multiple times)', action='append')
+    parser.add_argument('--plugin', help="Plugin to add", action='append')
+
     args = parser.parse_args()
+
+    
 
     irc_client = IRCClient(args.server,
                            args.port,
@@ -47,7 +54,11 @@ def main(argc, argv):
 
     plugin_threads = []
 
-    for plugin in PLUGINS:
+    for plugin_name in args.plugin:
+        if plugin_name not in PLUGINS:
+            print("Unknown plugin %s" % plugin_name)
+            continue
+        plugin = PLUGINS[plugin_name]
         x = plugin(irc_client)
         irc_client.add_plugin(x)
         x.start()
