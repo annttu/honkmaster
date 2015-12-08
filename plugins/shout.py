@@ -37,7 +37,7 @@ class Shout(HonkPlugin):
 
         cont = True
         while cont and self._running:
-            (readers,writers,errors) = select(self.conns + [self.s], self.conns, [self.s] + self.conns, 5)
+            (readers,writers,errors) = select(self.conns + [self.s], [], [self.s] + self.conns, 5)
             for r in readers:
                 if r == self.s:
                     conn, addr = self.s.accept()
