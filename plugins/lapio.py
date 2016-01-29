@@ -3,7 +3,9 @@
 from plugins.honkplugin import HonkPlugin
 import time
 from datetime import date
+import re
 
+hashtag_regexp = re.compile("\s#\w+[\s$]")
 
 class Lapio(HonkPlugin):
     __name__ = "lapio"
@@ -17,7 +19,7 @@ class Lapio(HonkPlugin):
         print("Joined to channel %s" % self.__target__)
         self._irc_client.send_message("Lapio started", self.__target__)
         self._irc_client.send_message("Lapio started, logging to %s" % self.__target__)
-        
+
 
     def process_incoming(self, message):
         print("%s" % (message,))
@@ -27,9 +29,10 @@ class Lapio(HonkPlugin):
             return
         who = message['source'].split('@')[0].split("!")[0]
 
-        if '#' not in message['data']:
+        if not hashtag_regexp.search(message['data']):
             return
-        # #HASHTAG!!!!
+
+        # OMG #HASHTAG!!!!
 
         msg = message['data']
 
