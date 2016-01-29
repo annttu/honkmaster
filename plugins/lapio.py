@@ -5,7 +5,7 @@ import time
 from datetime import date
 import re
 
-hashtag_regexp = re.compile("\s#\w+[\s$]")
+hashtag_regexp = re.compile(r"\s#\w+(\s|$)")
 
 class Lapio(HonkPlugin):
     __name__ = "lapio"
