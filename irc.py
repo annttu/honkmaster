@@ -28,12 +28,13 @@ class IRCException(BaseException):
     pass
 
 class IRCClient(threading.Thread):
-    def __init__(self, server, port, channels, nick, realname, ssl=False,
+    def __init__(self, server, port, channels, password, nick, realname, ssl=False,
                  server_password=None):
         threading.Thread.__init__(self)
         self._server = server
         self._port = port
         self._channels = channels
+        self._password = password
         self._nick = nick
         self._realname = realname
         self._use_ssl = ssl
@@ -157,7 +158,7 @@ class IRCClient(threading.Thread):
         if channel in self._joined_channels:
             return
         join_done = False
-        self._encode_send('JOIN %s\r\n' % (channel))
+        self._encode_send('JOIN %s %s\r\n' % (channel, self._password))
         while not join_done:
             irc_data = self._parse_irc_lines(self._decode_recv(4096))
             for data in irc_data:
