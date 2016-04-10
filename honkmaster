@@ -21,13 +21,14 @@ PLUGINS = {
 def main(argc, argv):
     parser = argparse.ArgumentParser(description='HonkMaster2')
     parser.add_argument('-s', '--server', help='irc server', required=True)
-    parser.add_argument('-p', '--port', help='irc server port', required=False, default=6667, type=int)
+    parser.add_argument('-P', '--port', help='irc server port', required=False, default=6667, type=int)
     parser.add_argument('--ssl', help="Use SSL for connection", required=False, default=False, action="store_true")
     parser.add_argument('--server-password', help="Server password", required=False, default=None)
     parser.add_argument('-c', '--channel', help='irc channel(s) (may be specified multiple times)', action='append', required=True)
     parser.add_argument('-n', '--nick', help='irc nick', required=True)
     parser.add_argument('-m', '--monitor', help='file to monitor (may be specified multiple times)', action='append')
-    parser.add_argument('--plugin', help="Plugin to add", action='append')
+    parser.add_argument('-p', '--password', help='channel password')
+    parser.add_argument('--plugin', help="Plugin to add", action='append', required=False)
 
     args = parser.parse_args()
 
@@ -36,6 +37,7 @@ def main(argc, argv):
     irc_client = IRCClient(args.server,
                            args.port,
                            args.channel,
+                           args.password,
                            args.nick,
                            'HonkMaster2',
                            ssl=args.ssl,
@@ -54,14 +56,15 @@ def main(argc, argv):
 
     plugin_threads = []
 
-    for plugin_name in args.plugin:
-        if plugin_name not in PLUGINS:
-            print("Unknown plugin %s" % plugin_name)
-            continue
-        plugin = PLUGINS[plugin_name]
-        x = plugin(irc_client)
-        irc_client.add_plugin(x)
-        x.start()
+    if args.plugin is not None:
+        for plugin_name in args.plugin:
+            if plugin_name not in PLUGINS:
+                print("Unknown plugin %s" % plugin_name)
+                continue
+            plugin = PLUGINS[plugin_name]
+            x = plugin(irc_client)
+            irc_client.add_plugin(x)
+            x.start()
 
     for file_monitor in file_monitors:
         file_monitor.start()
